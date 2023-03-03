@@ -1,29 +1,24 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+import requests
 from dotenv import load_dotenv
-import openai
 import os
 
-app = FastAPI()
-
 load_dotenv()
+secret_api_key = os.getenv('OPENAI_API_KEY')
 
-openai.api_key = os.getenv('SECRET_KEY')
-
-
-class Prompt(BaseModel):
-    text: str = Field(min_length=10, max_length=100)
-
-@app.post('/chat')
-def generate_response(prompt: Prompt):
+def generate_response(text):
     text_length = 1000
-    gpt3_model = "text-davinci-003"
-    response = openai.Completion.create(
-        engine=gpt3_model,
-        prompt=prompt.text,
-        max_tokens = text_length,
-        n=1,
-        stop=None,
-        temperature=0.5
-    )
-    return response['choices'][0]['text']
+    gpt3_model = "gpt-3.5-turbo"
+
+    url = "https://api.openai.com/v1/chat/completions"
+    data = {
+        "model": gpt3_model,
+        "max_tokens": text_length,
+        "messages": [{"role": "user", "content": text}]
+    }
+    headers = {
+        "Authorization": secret_api_key,
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, json = data, headers = headers)
+    return response.json()['choices'][0]['message']['content']
